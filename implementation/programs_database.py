@@ -71,6 +71,59 @@ class Prompt:
   version_generated: int
   island_id: int
 
+# @ksgk
+@dataclasses.dataclass(frozen=True)
+class Prompt4Tip:
+  """A prompt produced by the AdviceDatabase, to be sent to Samplers"
+  
+  Attributes:
+    begin: Such as 'You should', 'Do not', 'Never', 'Always' etc to start the tip.
+    version_generated: The tip to be completed is '_v{version_generated}'
+    island_id: Identified of the island that produced the implementations
+      included in the prompt. Used to direct the newly generated implementation
+      into the same island.
+  """
+  begin: str
+  version_generated: int
+  island_id: int
+
+
+# @ksgk
+class PromptsDatabase:
+  """Pool of prompts, organized as islands."""
+
+  def __init__(
+      self,
+      config: config_lib.PromptBagDatabaseConfig,
+      template: code_manipulation.Advice,
+      tip_to_evolve: str,
+  ) -> None:
+    self._config: config_lib.PromptDatabaseConfig = config
+    self._template: code_manipulation.Advice = template
+    self._tip_to_evolve: str = tip_to_evolve
+
+    # Initialize empty islands
+    self._islands: list[Island] = []
+    for _ in range(config.num_islands):
+      self._islands.append(
+          Island(template, tip_to_evolve, config.bags_per_prompt,
+                 config.cluster_sampling_temperature_init,
+                 config.cluster_sampling_temperature_period))
+    self._best_score_per_island: list[float] = (
+        [-float('inf')] * config.num_islands)
+    self._best_program_per_island: list[code_manipulation.Function | None] = (
+        [None] * config.num_islands)
+    self._best_scores_per_test_per_island: list[ScoresPerTest | None] = (
+        [None] * config.num_islands)
+    
+    self._last_reset_time: float = time.time()
+
+  def get_prompt(self) -> Prompt:
+    """Returns a prompt containing implementations from one chosen island."""
+    island_id = np.random.randint(len(self._islands))
+    code, version_generated = self._islands[island_id].get_prompt()
+    return Prompt(code, version_generated, island_id)
+
 
 class ProgramsDatabase:
   """A collection of programs, organized as islands."""
@@ -165,6 +218,10 @@ class ProgramsDatabase:
       founder = self._best_program_per_island[founder_island_id]
       founder_scores = self._best_scores_per_test_per_island[founder_island_id]
       self._register_program_in_island(founder, island_id, founder_scores)
+
+# Island is what we want to move, except we do not need functions, we need only prompts itself
+# We need to store prompts in the database, not functions
+      
 
 
 class Island:

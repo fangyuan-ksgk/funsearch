@@ -16,7 +16,9 @@
 """Configuration of a FunSearch experiment."""
 import dataclasses
 
-
+# Simple Overview:
+# -- whatever the structure, it is survival of the fittest -- that should be the function_to_evo, or the prompts, so, evaluate, selection, period.
+# -- Better yet, think of the 'functional design' as 'Agent-Prompt design' --- we shall use prompt to design prompt (:->)
 @dataclasses.dataclass(frozen=True)
 class ProgramsDatabaseConfig:
   """Configuration of a ProgramsDatabase.
@@ -30,11 +32,30 @@ class ProgramsDatabaseConfig:
     cluster_sampling_temperature_period: Period of linear decay of the cluster
         sampling temperature.
   """
-  functions_per_prompt: int = 2
+  functions_per_prompt: int = 2 # What does this mean??? Each prompt has many functions? And each generated functions is different?
   num_islands: int = 10
   reset_period: int = 4 * 60 * 60
   cluster_sampling_temperature_init: float = 0.1
   cluster_sampling_temperature_period: int = 30_000
+
+@dataclasses.dataclass(frozen=True)
+class PromptBagDatabaseConfig:
+  """Configuration of a PromptDatabase.
+
+  Attributes:
+    num_prompts: Number of prompts to maintain.
+    prompt_length: Number of tokens in each prompt.
+    prompt_sampling_temperature_init: Initial temperature for softmax sampling
+        of prompts.
+    prompt_sampling_temperature_period: Period of linear decay of the prompt
+        sampling temperature.
+  """
+  bags_per_prompt: int = 2 # prompt to design agent prompt (PromptBags)
+  num_islands: int = 10
+  reset_period: int = 4 * 60 * 60
+  cluster_sampling_temperature_init: float = 0.1
+  cluster_sampling_temperature_period: int = 30_000
+
 
 
 @dataclasses.dataclass(frozen=True)

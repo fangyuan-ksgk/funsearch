@@ -29,6 +29,9 @@ import tokenize
 
 from absl import logging
 
+# overview:
+# -- Function is a collection of code
+# -- Function allows us to do the following:
 
 @dataclasses.dataclass
 class Function:
@@ -53,7 +56,7 @@ class Function:
     function += self.body + '\n\n'
     return function
 
-  def __setattr__(self, name: str, value: str) -> None:
+  def __setattr__(self, name: str, value: str) -> None: # set attribute value, name/args/body/return_type/docstring etc.
     # Ensure there aren't leading & trailing new lines in `body`.
     if name == 'body':
       value = value.strip('\n')
@@ -64,7 +67,60 @@ class Function:
         value = value.replace('"""', '')
     super().__setattr__(name, value)
 
+# SingleTip is a single-sentence prompt for a certain LLM agent -- analogy to Function in funsearch
+@dataclasses.dataclass
+class SingleTip:
+  """"SingleTip (Tip for certain agent) is a collection of prompt message, each is a single sentence."""
+  agent: str
+  name: str
+  body: str
 
+  def __str__(self) -> str:
+    return f'[Tip for {self.agent}][{self.name}]' + '\n' + self.body + '\n\n'
+  
+  def __setattr__(self, name: str, value: str) -> None: # set attribute value, name/agent/body etc.
+    super().__setattr__(name, value) # I do not see any obvious issue here
+  
+class Advice:
+  """Advice is a collection of SingleTip, used to prompt a LLM agent to achieve better zero-shot performance."""
+  preface: str
+  tips: list[SingleTip]
+
+  def __str__(self) -> str:
+    advice = f'{self.preface}\n' if self.preface else ''
+    advice += '\n'.join([str(t) for t in self.tips])
+    return advice
+  
+  def find_tip_index(self, tip_name: str) -> int:
+    """
+    Returns the index of input tip name.
+    Optimization required :>  -- use dict instead of list
+    """
+    tip_names = [t.name for t in self.tips]
+    count = tip_names.count(tip_name)
+    if count == 0:
+      raise ValueError(
+          f'tip {tip_name} does not exist in advice:\n{str(self)}'
+      )
+    if count > 1:
+      raise ValueError(
+          f'tip {tip_name} exists more than once in advice:\n'
+          f'{str(self)}'
+      )
+    index = tip_names.index(tip_name)
+    return index
+  
+  def get_tip(self, tip_name: str) -> SingleTip:
+    index = self.find_tip_index(tip_name)
+    return self.tips[index]
+
+
+# overview: 
+# -- Program is a list of functions
+    # -- Function is a collection of code
+# -- Program allows us to do the following:
+    # -- find_function_index: find the index of a function in a program
+    # -- get_function: get a function from a program
 @dataclasses.dataclass(frozen=True)
 class Program:
   """A parsed Python program."""
